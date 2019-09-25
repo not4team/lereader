@@ -201,10 +201,10 @@ async def index(request):
     first_type = []
     search_ranking = await cache_owllook_search_ranking()
     if user:
-        return template('index.html', title='owllook', is_login=1, user=user, search_ranking=search_ranking,
+        return template('index.html', title='lereader', is_login=1, user=user, search_ranking=search_ranking,
                         first_type=first_type, first_type_title=first_type_title, novels_head=novels_head, is_owl=1)
     else:
-        return template('index.html', title='owllook', is_login=0, search_ranking=search_ranking, first_type=first_type,
+        return template('index.html', title='lereader', is_login=0, search_ranking=search_ranking, first_type=first_type,
                         first_type_title=first_type_title, novels_head=novels_head, is_owl=1)
 
 
