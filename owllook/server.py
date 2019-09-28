@@ -25,7 +25,6 @@ app.blueprint(api_bp)
 def init_cache(app, loop):
     LOGGER.info("Starting aiocache")
     app.config.from_object(CONFIG)
-    print(CONFIG)
     REDIS_DICT = CONFIG.REDIS_DICT
     # You can use either classes or strings for referencing classes
     caches.set_config({

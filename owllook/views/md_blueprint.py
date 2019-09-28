@@ -263,7 +263,7 @@ async def qidian(request):
     else:
         return redirect('qidian')
     search_ranking = await cache_others_search_ranking(spider='qidian', novel_type=novels_type)
-    title = "owllook - 起点小说榜单"
+    title = "lereader - 起点小说榜单"
     if user:
         return template('index.html',
                         title=title,
@@ -332,7 +332,7 @@ async def zongheng(request):
     else:
         return redirect('zongheng')
     search_ranking = await cache_others_search_ranking(spider='zongheng', novel_type=novels_type)
-    title = "owllook - 纵横小说人气榜单"
+    title = "lereader - 纵横小说人气榜单"
     if user:
         return template('index.html',
                         title=title,

@@ -6,6 +6,7 @@
 import re
 import aiohttp
 import async_timeout
+import json
 
 from bs4 import BeautifulSoup
 from aiocache.serializers import PickleSerializer, JsonSerializer
@@ -51,7 +52,8 @@ async def cache_owllook_novels_content(url, netloc):
             #     title = title.split('_')[0]
             # elif "-" in title:
             #     title = title.split('-')[0]
-            next_chapter = extract_pre_next_chapter(chapter_url=url, html=str(soup))
+            next_chapter = extract_pre_next_chapter(
+                chapter_url=url, html=str(soup))
             content = [str(i) for i in content]
             data = {
                 'content': str(''.join(content)),
@@ -90,7 +92,8 @@ async def cache_owllook_novels_chapter(url, netloc):
 async def cache_owllook_search_ranking():
     oracle_db = OracleBase().get_db()
     keyword_cursor = oracle_db.cursor()
-    keyword_cursor.execute("select keyword, count from search_records where rownum < 35 order by count desc")
+    keyword_cursor.execute(
+        "select keyword, count from search_records where rownum < 35 order by count desc")
     # keyword_cursor = motor_db.search_records.find(
     #     {'count': {'$gte': 50}},
     #     {'keyword': 1, 'count': 1, '_id': 0}
@@ -98,17 +101,26 @@ async def cache_owllook_search_ranking():
     result = []
     index = 1
     for document in keyword_cursor:
-        print(document)
-        result.append({'keyword': document[0], 'count': document[1], 'index': index})
+        result.append(
+            {'keyword': document[0], 'count': document[1], 'index': index})
         index += 1
     keyword_cursor.close()
     return result
 
 
-@cached(ttl=3600, key='search_ranking', serializer=JsonSerializer(), namespace="ranking")
+@cached(ttl=3600, key_from_attr='search_ranking', serializer=JsonSerializer(), namespace="ranking")
 async def cache_others_search_ranking(spider='qidian', novel_type='全部类别'):
-    motor_db = MotorBase().get_db()
-    item_data = await motor_db.novels_ranking.find_one({'spider': spider, 'type': novel_type}, {'data': 1, '_id': 0})
+    oracle_db = OracleBase().get_db()
+    # item_data = await motor_db.novels_ranking.find_one({'spider': spider, 'type': novel_type}, {'data': 1, '_id': 0})
+    cursor = oracle_db.cursor()
+    cursor.execute(
+        "select spider, type, target_url, json_data as data from novels_ranking where spider = :s and type = :t", s=spider, t=novel_type)
+    row = cursor.fetchone()
+    item_data = {}
+    if row:
+        item_data = {'spider': row[0], 'type': row[1],
+                     'target_url': row[2], 'data': json.loads(row[3].read())}
+    cursor.close()
     return item_data
 
 
@@ -116,7 +128,8 @@ async def get_the_latest_chapter(chapter_url, timeout=15):
     try:
         with async_timeout.timeout(timeout):
             url = parse_qs(urlparse(chapter_url).query).get('url', '')
-            novels_name = parse_qs(urlparse(chapter_url).query).get('novels_name', '')
+            novels_name = parse_qs(
+                urlparse(chapter_url).query).get('novels_name', '')
             data = None
             if url and novels_name:
                 url = url[0]
@@ -129,9 +142,11 @@ async def get_the_latest_chapter(chapter_url, timeout=15):
                     try:
                         html = await target_fetch(url=url, headers=headers, timeout=timeout)
                         if html is None:
-                            html = get_html_by_requests(url=url, headers=headers, timeout=timeout)
+                            html = get_html_by_requests(
+                                url=url, headers=headers, timeout=timeout)
                     except TypeError:
-                        html = get_html_by_requests(url=url, headers=headers, timeout=timeout)
+                        html = get_html_by_requests(
+                            url=url, headers=headers, timeout=timeout)
                     except Exception as e:
                         LOGGER.exception(e)
                         return None
@@ -158,11 +173,14 @@ async def get_the_latest_chapter(chapter_url, timeout=15):
                         selector = LATEST_RULES[netloc].selector
                         content_url = selector.get('content_url')
                         if selector.get('id', None):
-                            latest_chapter_soup = soup.find_all(id=selector['id'])
+                            latest_chapter_soup = soup.find_all(
+                                id=selector['id'])
                         elif selector.get('class', None):
-                            latest_chapter_soup = soup.find_all(class_=selector['class'])
+                            latest_chapter_soup = soup.find_all(
+                                class_=selector['class'])
                         else:
-                            latest_chapter_soup = soup.select(selector.get('tag'))
+                            latest_chapter_soup = soup.select(
+                                selector.get('tag'))
                         if latest_chapter_soup:
                             if content_url == '1':
                                 # TODO
@@ -171,8 +189,10 @@ async def get_the_latest_chapter(chapter_url, timeout=15):
                                 # TODO
                                 pass
                             else:
-                                latest_chapter_url = content_url + latest_chapter_soup[0].get('href', None)
-                            latest_chapter_name = latest_chapter_soup[0].get('title', None)
+                                latest_chapter_url = content_url + \
+                                    latest_chapter_soup[0].get('href', None)
+                            latest_chapter_name = latest_chapter_soup[0].get(
+                                'title', None)
                     if latest_chapter_name and latest_chapter_url:
                         time_current = get_time()
                         # print(latest_chapter_url)
@@ -190,7 +210,8 @@ async def get_the_latest_chapter(chapter_url, timeout=15):
                         # 存储最新章节
                         motor_db = MotorBase().get_db()
                         await motor_db.latest_chapter.update_one(
-                            {"novels_name": novels_name, 'owllook_chapter_url': chapter_url},
+                            {"novels_name": novels_name,
+                                'owllook_chapter_url': chapter_url},
                             {'$set': {'data': data, "finished_at": time_current}}, upsert=True)
             return data
     except Exception as e:
@@ -202,7 +223,8 @@ async def update_all_books(loop, timeout=15):
     try:
         motor_db = MotorBase().get_db()
         # 获取所有书架链接游标
-        books_url_cursor = motor_db.user_message.find({}, {'books_url.book_url': 1, '_id': 0})
+        books_url_cursor = motor_db.user_message.find(
+            {}, {'books_url.book_url': 1, '_id': 0})
         book_urls = []
         already_urls = set()
         async for document in books_url_cursor:
