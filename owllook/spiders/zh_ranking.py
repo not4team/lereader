@@ -60,7 +60,8 @@ class ZHRankingSpider(Spider):
 
     async def save(self, res_dic):
         try:
-            oracle_db = OracleBase().get_db()
+            oracle_base = OracleBase()
+            oracle_db = oracle_base.get_db()
             cursor = oracle_db.cursor()
             cursor.execute(
                 "select target_url from novels_ranking where target_url = :url", url=res_dic['target_url'])
@@ -79,6 +80,7 @@ class ZHRankingSpider(Spider):
                 oracle_db.commit()
                 cursor2.close()
             cursor.close()
+            oracle_base.release(oracle_db)
             # await oracle_db.novels_ranking.update_one({
             #     'target_url': res_dic['target_url']},
             #     {'$set': {

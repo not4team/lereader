@@ -14,11 +14,12 @@ class OracleBase:
     def __init__(self):
         # Create the session pool
         self.pool = cx_Oracle.SessionPool("novel", "omNnd#235643", self.db201909220328_medium,
-                                     min=2, max=5, increment=1, threaded=True, encoding="UTF-8", nencoding="UTF-8")
-    def client(self):
-        return self.connection
+                                          min=2, max=5, increment=1, threaded=True, encoding="UTF-8", nencoding="UTF-8")
 
     def get_db(self):
         # Acquire a connection from the pool
         connection = self.pool.acquire()
         return connection
+
+    def release(self, conn):
+        self.pool.release(conn)

@@ -90,7 +90,8 @@ async def cache_owllook_novels_chapter(url, netloc):
 
 @cached(ttl=10800, key_from_attr='search_ranking', serializer=JsonSerializer(), namespace="ranking")
 async def cache_owllook_search_ranking():
-    oracle_db = OracleBase().get_db()
+    oracle_base = OracleBase()
+    oracle_db = oracle_base.get_db()
     keyword_cursor = oracle_db.cursor()
     keyword_cursor.execute(
         "select keyword, count from search_records where rownum < 35 order by count desc")
@@ -105,12 +106,14 @@ async def cache_owllook_search_ranking():
             {'keyword': document[0], 'count': document[1], 'index': index})
         index += 1
     keyword_cursor.close()
+    oracle_base.release(oracle_db)
     return result
 
 
 @cached(ttl=3600, key_from_attr='search_ranking', serializer=JsonSerializer(), namespace="ranking")
 async def cache_others_search_ranking(spider='qidian', novel_type='全部类别'):
-    oracle_db = OracleBase().get_db()
+    oracle_base = OracleBase()
+    oracle_db = oracle_base.get_db()
     # item_data = await motor_db.novels_ranking.find_one({'spider': spider, 'type': novel_type}, {'data': 1, '_id': 0})
     cursor = oracle_db.cursor()
     cursor.execute(
@@ -121,6 +124,7 @@ async def cache_others_search_ranking(spider='qidian', novel_type='全部类别'
         item_data = {'spider': row[0], 'type': row[1],
                      'target_url': row[2], 'data': json.loads(row[3].read())}
     cursor.close()
+    oracle_base.release(oracle_db)
     return item_data
 
 

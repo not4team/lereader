@@ -81,7 +81,8 @@ class QidianRankingSpider(Spider):
     async def save(self, res_dic):
         # 存进数据库
         try:
-            oracle_db = OracleBase().get_db()
+            oracle_base = OracleBase()
+            oracle_db = oracle_base.get_db()
             cursor = oracle_db.cursor()
             cursor.execute(
                 "select target_url from novels_ranking where target_url = :url", url=res_dic['target_url'])
@@ -100,6 +101,7 @@ class QidianRankingSpider(Spider):
                 oracle_db.commit()
                 cursor2.close()
             cursor.close()
+            oracle_base.release(oracle_db)
             # await motor_db.novels_ranking.update_one({
             #     'target_url': res_dic['target_url']},
             #     {'$set': {

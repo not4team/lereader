@@ -112,7 +112,7 @@ async def owllook_content(request):
     book_url = "/chapter?url={chapter_url}&novels_name={novels_name}".format(
         chapter_url=chapter_url,
         novels_name=novels_name)
-    oracle_db = oracle_base.get_db()
+    # oracle_db = oracle_base.get_db()
     if url == chapter_url:
         # 阅读到最后章节时候 在数据库中保存最新阅读章节
         if user and is_ajax == "owl_cache":
@@ -270,6 +270,7 @@ async def owllook_search(request):
             LOGGER.exception(e)
         finally:
             cursor.close()
+            oracle_base.release(oracle_db)
     # 通过搜索引擎获取检索结果
     parse_result = None
     if name.startswith('!baidu'):

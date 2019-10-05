@@ -344,6 +344,7 @@ async def owllook_login(request):
                 cursor.close()
                 return json({'status': -2})
         cursor.close()
+        oracle_base.release(oracle_db)
         return json({'status': -1})
     else:
         return json({'status': 0})
@@ -414,6 +415,7 @@ async def owllook_register(request):
         else:
             cursor.close()
             return json({'status': -1})
+        oracle_base.release(oracle_db)
     else:
         return json({'status': 0})
 
