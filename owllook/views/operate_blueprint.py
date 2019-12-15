@@ -393,7 +393,7 @@ async def owllook_register(request):
                     "email": email,
                     "register_time": time,
                 }
-                await motor_db.user.save(data)
+                await motor_db.user.insert_one(data)
                 return json({'status': 1})
             else:
                 return json({'status': -2})
