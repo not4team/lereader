@@ -82,10 +82,10 @@ async def index(request):
     user = request['session'].get('user', None)
     search_ranking = await cache_owllook_search_ranking()
     if user:
-        return template('index.html', title='owllook - 网络小说搜索引擎', is_login=1, user=user,
+        return template('index.html', title='lereader - 网络小说搜索引擎', is_login=1, user=user,
                         search_ranking=search_ranking[:25])
     else:
-        return template('index.html', title='owllook - 网络小说搜索引擎', is_login=0, search_ranking=search_ranking[:25])
+        return template('index.html', title='lereader - 网络小说搜索引擎', is_login=0, search_ranking=search_ranking[:25])
 
 
 @novels_bp.route("/owllook_content")
@@ -245,7 +245,7 @@ async def owllook_register(request):
             request['session']['index'] = ver_que_ans
             return template(
                 'register.html',
-                title='owllook - 注册 - 网络小说搜索引擎',
+                title='lereader - 注册 - 网络小说搜索引擎',
                 question=ver_que_ans[1]
             )
         else:

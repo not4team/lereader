@@ -43,7 +43,7 @@ async def admin_setting(request):
             motor_db = motor_base.get_db()
             data = await motor_db.user.find_one({'user': user})
             if data:
-                return template('admin_setting.html', title='{user}的设置 - owllook'.format(user=user),
+                return template('admin_setting.html', title='{user}的设置 - lereader'.format(user=user),
                                 is_login=1,
                                 user=user,
                                 register_time=data['register_time'],
@@ -62,7 +62,7 @@ async def bd_novels(request):
     user = request['session'].get('user', None)
     first_type_title = "纵横百度小说月票榜"
     first_type = []
-    title = "owllook - 纵横百度小说月票榜"
+    title = "lereader - 纵横百度小说月票榜"
     novels_head = ['#', '小说名', '类型']
     search_ranking = await cache_others_search_ranking(spider='zh_bd_novels', novel_type='全部类别')
     if user:
@@ -91,7 +91,7 @@ async def book_list(request):
     user = request['session'].get('user', None)
     if user:
         try:
-            return template('admin_book_list.html', title='{user}的书单 - owllook'.format(user=user),
+            return template('admin_book_list.html', title='{user}的书单 - lereader'.format(user=user),
                             is_login=1,
                             user=user)
         except Exception as e:
@@ -126,12 +126,12 @@ async def bookmarks(request):
                         item_result['bookmark'] = bookmark
                         item_result['add_time'] = i.get('add_time', '')
                         result.append(item_result)
-                    return template('admin_bookmarks.html', title='{user}的书签 - owllook'.format(user=user),
+                    return template('admin_bookmarks.html', title='{user}的书签 - lereader'.format(user=user),
                                     is_login=1,
                                     user=user,
                                     is_bookmark=1,
                                     result=result[::-1])
-            return template('admin_bookmarks.html', title='{user}的书签 - owllook'.format(user=user),
+            return template('admin_bookmarks.html', title='{user}的书签 - lereader'.format(user=user),
                             is_login=1,
                             user=user,
                             is_bookmark=0)
@@ -177,12 +177,12 @@ async def books(request):
                         item_result["last_read_url"] = last_read_url if last_read_url else book_url
                         item_result["last_read_chapter_name"] = last_read_chapter_name
                         result.append(item_result)
-                    return template('admin_books.html', title='{user}的书架 - owllook'.format(user=user),
+                    return template('admin_books.html', title='{user}的书架 - lereader'.format(user=user),
                                     is_login=1,
                                     user=user,
                                     is_bookmark=1,
                                     result=result[::-1])
-            return template('admin_books.html', title='{user}的书架 - owllook'.format(user=user),
+            return template('admin_books.html', title='{user}的书架 - lereader'.format(user=user),
                             is_login=1,
                             user=user,
                             is_bookmark=0)
@@ -201,10 +201,10 @@ async def index(request):
     first_type = []
     search_ranking = await cache_owllook_search_ranking()
     if user:
-        return template('index.html', title='owllook', is_login=1, user=user, search_ranking=search_ranking,
+        return template('index.html', title='lereader', is_login=1, user=user, search_ranking=search_ranking,
                         first_type=first_type, first_type_title=first_type_title, novels_head=novels_head, is_owl=1)
     else:
-        return template('index.html', title='owllook', is_login=0, search_ranking=search_ranking, first_type=first_type,
+        return template('index.html', title='lereader', is_login=0, search_ranking=search_ranking, first_type=first_type,
                         first_type_title=first_type_title, novels_head=novels_head, is_owl=1)
 
 
@@ -219,13 +219,13 @@ async def noti_book(request):
             if data:
                 is_author = 1
                 author_list = data.get('author_latest', {})
-                return template('noti_book.html', title='新书提醒 - owllook'.format(user=user),
+                return template('noti_book.html', title='新书提醒 - lereader'.format(user=user),
                                 is_login=1,
                                 is_author=is_author,
                                 author_list=author_list,
                                 user=user)
             else:
-                return template('noti_book.html', title='新书提醒 - owllook'.format(user=user),
+                return template('noti_book.html', title='新书提醒 - lereader'.format(user=user),
                                 is_login=1,
                                 is_author=is_author,
                                 user=user)
@@ -263,7 +263,7 @@ async def qidian(request):
     else:
         return redirect('qidian')
     search_ranking = await cache_others_search_ranking(spider='qidian', novel_type=novels_type)
-    title = "owllook - 起点小说榜单"
+    title = "lereader - 起点小说榜单"
     if user:
         return template('index.html',
                         title=title,
@@ -332,7 +332,7 @@ async def zongheng(request):
     else:
         return redirect('zongheng')
     search_ranking = await cache_others_search_ranking(spider='zongheng', novel_type=novels_type)
-    title = "owllook - 纵横小说人气榜单"
+    title = "lereader - 纵横小说人气榜单"
     if user:
         return template('index.html',
                         title=title,

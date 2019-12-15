@@ -15,9 +15,9 @@ from owllook.fetcher.function import get_time
 # mongo
 MONGODB_SERVER = "localhost"
 MONGODB_PORT = 27017
-MONGODB_USERNAME = ""
-MONGODB_PASSWORD = ""
-MONGODB_DB = "owllook"
+MONGODB_USERNAME = "lereader"
+MONGODB_PASSWORD = "ouij8904!dd"
+MONGODB_DB = "lereader"
 MONGODB_COLLECTION = "all_novels_info"
 
 
