@@ -130,8 +130,7 @@ def cached(
                 try:
                     await cache_instance.set(cache_key, result, ttl=ttl)
                 except Exception:
-                    LOGGER.exception(
-                        "Unexpected error with %s", cache_instance)
+                    LOGGER.exception("Unexpected error with %s", cache_instance)
 
             return result
 

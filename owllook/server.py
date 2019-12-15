@@ -1,16 +1,17 @@
 #!/usr/bin/env python
+from owllook.config import LOGGER, CONFIG
+from owllook.database.redis import RedisSession
+from owllook.views import admin_bp, api_bp, except_bp, md_bp, novels_bp, operate_bp
 import os
 import sys
 
 from sanic import Sanic
 from sanic.response import html, redirect
 from sanic_session import RedisSessionInterface
+from aiocache import caches
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from owllook.config import LOGGER, CONFIG
-from owllook.database.redis import RedisSession
-from owllook.views import admin_bp, api_bp, except_bp, md_bp, novels_bp, operate_bp
-from aiocache import caches
+
 
 app = Sanic(__name__)
 app.blueprint(md_bp)
@@ -26,6 +27,7 @@ def init_cache(app, loop):
     LOGGER.info("Starting aiocache")
     app.config.from_object(CONFIG)
     REDIS_DICT = CONFIG.REDIS_DICT
+
     # You can use either classes or strings for referencing classes
     caches.set_config({
         'default': {
@@ -43,21 +45,21 @@ def init_cache(app, loop):
             ]
         }
     })
-    # aiocache.settings.set_defaults(
-    #     class_="aiocache.RedisCache",
-    #     endpoint=REDIS_DICT.get('REDIS_ENDPOINT', 'localhost'),
-    #     port=REDIS_DICT.get('REDIS_PORT', 6379),
-    #     db=REDIS_DICT.get('CACHE_DB', 0),
-    #     password=REDIS_DICT.get('REDIS_PASSWORD', None),
-    #     loop=loop,
-    # )
-    LOGGER.info("Starting redis pool")
-    redis_session = RedisSession()
-    # redis instance for app
-    app.get_redis_pool = redis_session.get_redis_pool
-    # pass the getter method for the connection pool into the session
-    app.session_interface = RedisSessionInterface(
-        app.get_redis_pool, cookie_name="owl_sid", expiry=30 * 24 * 60 * 60)
+# aiocache.settings.set_defaults(
+#     class_="aiocache.RedisCache",
+#     endpoint=REDIS_DICT.get('REDIS_ENDPOINT', 'localhost'),
+#     port=REDIS_DICT.get('REDIS_PORT', 6379),
+#     db=REDIS_DICT.get('CACHE_DB', 0),
+#     password=REDIS_DICT.get('REDIS_PASSWORD', None),
+#     loop=loop,
+# )
+LOGGER.info("Starting redis pool")
+redis_session = RedisSession()
+# redis instance for app
+app.get_redis_pool = redis_session.get_redis_pool
+# pass the getter method for the connection pool into the session
+app.session_interface = RedisSessionInterface(
+    app.get_redis_pool, cookie_name="owl_sid", expiry=30 * 24 * 60 * 60)
 
 
 @app.middleware('request')

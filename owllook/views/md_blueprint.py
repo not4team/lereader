@@ -5,7 +5,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from sanic import Blueprint
 from sanic.response import html, text, redirect
 
-from owllook.database.oracle import OracleBase
+from owllook.database.mongodb import MotorBase
 from owllook.fetcher.cache import get_the_latest_chapter, cache_owllook_search_ranking, cache_others_search_ranking
 from owllook.config import RULES, LOGGER, REPLACE_RULES, ENGINE_PRIORITY, CONFIG
 
@@ -15,13 +15,13 @@ md_bp.static('/static/md', CONFIG.BASE_DIR + '/static/md')
 
 @md_bp.listener('before_server_start')
 def setup_db(rank_bp, loop):
-    global oracle_base
-    oracle_base = OracleBase()
+    global motor_base
+    motor_base = MotorBase()
 
 
 @md_bp.listener('after_server_stop')
 def close_connection(rank_bp, loop):
-    oracle_base = None
+    motor_base = None
 
 
 # jinjia2 config
@@ -201,10 +201,10 @@ async def index(request):
     first_type = []
     search_ranking = await cache_owllook_search_ranking()
     if user:
-        return template('index.html', title='lereader', is_login=1, user=user, search_ranking=search_ranking,
+        return template('index.html', title='owllook', is_login=1, user=user, search_ranking=search_ranking,
                         first_type=first_type, first_type_title=first_type_title, novels_head=novels_head, is_owl=1)
     else:
-        return template('index.html', title='lereader', is_login=0, search_ranking=search_ranking, first_type=first_type,
+        return template('index.html', title='owllook', is_login=0, search_ranking=search_ranking, first_type=first_type,
                         first_type_title=first_type_title, novels_head=novels_head, is_owl=1)
 
 
@@ -263,7 +263,7 @@ async def qidian(request):
     else:
         return redirect('qidian')
     search_ranking = await cache_others_search_ranking(spider='qidian', novel_type=novels_type)
-    title = "lereader - 起点小说榜单"
+    title = "owllook - 起点小说榜单"
     if user:
         return template('index.html',
                         title=title,
@@ -332,7 +332,7 @@ async def zongheng(request):
     else:
         return redirect('zongheng')
     search_ranking = await cache_others_search_ranking(spider='zongheng', novel_type=novels_type)
-    title = "lereader - 纵横小说人气榜单"
+    title = "owllook - 纵横小说人气榜单"
     if user:
         return template('index.html',
                         title=title,

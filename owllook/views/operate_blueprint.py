@@ -7,7 +7,7 @@ from sanic import Blueprint
 from sanic.response import html, json
 from urllib.parse import parse_qs, unquote
 
-from owllook.database.oracle import OracleBase
+from owllook.database.mongodb import MotorBase
 from owllook.fetcher.function import get_time
 from owllook.utils import get_real_answer
 from owllook.config import CONFIG, LOGGER
@@ -24,13 +24,13 @@ operate_bp = Blueprint('operate_blueprint', url_prefix='operate')
 
 @operate_bp.listener('before_server_start')
 def setup_db(operate_bp, loop):
-    global oracle_base
-    oracle_base = OracleBase()
+    global motor_base
+    motor_base = MotorBase()
 
 
 @operate_bp.listener('after_server_stop')
 def close_connection(operate_bp, loop):
-    oracle_base = None
+    motor_base = None
 
 
 # jinjia2 config
@@ -315,16 +315,12 @@ async def owllook_login(request):
     user = login_data.get('user', [None])[0]
     pwd = login_data.get('pwd', [None])[0]
     if user and pwd:
-        oracle_db = oracle_base.get_db()
-        cursor = oracle_db.cursor()
-        cursor.execute("select user_name, password from t_user where user_name = :name", name = user)
-        row = cursor.fetchone()
-        # data = await motor_db.user.find_one({'user': user})
-        if row:
+        motor_db = motor_base.get_db()
+        data = await motor_db.user.find_one({'user': user})
+        if data:
             pass_first = hashlib.md5((CONFIG.WEBSITE["TOKEN"] + pwd).encode("utf-8")).hexdigest()
             password = hashlib.md5(pass_first.encode("utf-8")).hexdigest()
-            # if password == data.get('password'):
-            if password == row[1]:
+            if password == data.get('password'):
                 response = json({'status': 1})
                 # 将session_id存于cokies
                 date = datetime.datetime.now()
@@ -338,12 +334,9 @@ async def owllook_login(request):
                 # response.cookies['user']['httponly'] = True
                 # response = json({'status': 1})
                 # response.cookies['user'] = user
-                cursor.close()
                 return response
             else:
-                cursor.close()
                 return json({'status': -2})
-        cursor.close()
         return json({'status': -1})
     else:
         return json({'status': 0})
@@ -385,12 +378,9 @@ async def owllook_register(request):
     answer = register_data.get('answer', [None])[0]
     reg_index = request.cookies.get('reg_index')
     if user and pwd and email and answer and reg_index and len(user) > 2 and len(pwd) > 5:
-        oracle_db = oracle_base.get_db()
-        cursor = oracle_db.cursor()
-        cursor.execute("select user_name from t_user where user_name = :name", name = user)
-        row = cursor.fetchone()
-        # is_exist = await motor_db.user.find_one({'user': user})
-        if row is None:
+        motor_db = motor_base.get_db()
+        is_exist = await motor_db.user.find_one({'user': user})
+        if not is_exist:
             # 验证问题答案是否准确
             real_answer = get_real_answer(str(reg_index))
             if real_answer and real_answer == answer:
@@ -403,16 +393,11 @@ async def owllook_register(request):
                     "email": email,
                     "register_time": time,
                 }
-                # await motor_db.user.save(data)
-                cursor.execute("insert into t_user values (:user_name, :password, :email, :register_time)", [user, password, email, time])
-                oracle_db.commit()
-                cursor.close()
+                await motor_db.user.save(data)
                 return json({'status': 1})
             else:
-                cursor.close()
                 return json({'status': -2})
         else:
-            cursor.close()
             return json({'status': -1})
     else:
         return json({'status': 0})

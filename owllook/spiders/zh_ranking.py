@@ -3,25 +3,22 @@
  Created by howie.hu at 29/11/2017.
 """
 import time
-import json
 
 from ruia import Spider, Item, AttrField, HtmlField, TextField
 from ruia_ua import middleware
 
-from owllook.database.oracle import OracleBase
+from owllook.database.mongodb import MotorBaseOld
 
 
 class RankingItem(Item):
     target_item = TextField(css_select='div.rank_i_p_list')
     ranking_title = TextField(css_select='div.rank_i_p_tit')
     more = AttrField(css_select='div.rank_i_more a', attr='href')
-    book_list = HtmlField(
-        css_select='div.rank_i_p_list>div.rank_i_li', many=True)
+    book_list = HtmlField(css_select='div.rank_i_p_list>div.rank_i_li', many=True)
 
 
 class NameItem(Item):
-    top_name = TextField(
-        css_select='div.rank_i_bname a.rank_i_l_a_book', default='')
+    top_name = TextField(css_select='div.rank_i_bname a.rank_i_l_a_book', default='')
     other_name = TextField(css_select='div.rank_i_bname a', default='')
 
 
@@ -60,34 +57,16 @@ class ZHRankingSpider(Spider):
 
     async def save(self, res_dic):
         try:
-            oracle_db = OracleBase().get_db()
-            cursor = oracle_db.cursor()
-            cursor.execute(
-                "select target_url from novels_ranking where target_url = :url", url=res_dic['target_url'])
-            row = cursor.fetchone()
-            if row:
-                cursor1 = oracle_db.cursor()
-                cursor1.execute("update novels_ranking set type=:t, finished_at=:f, json_data=:j where target_url=:url", t=res_dic['type'], f=time.strftime(
-                    "%Y-%m-%d %X", time.localtime()), j=json.dumps(res_dic['data']), url=res_dic['target_url'])
-                oracle_db.commit()
-                cursor1.close()
-            else:
-                cursor2 = oracle_db.cursor()
-                cursor2.execute(
-                    "insert into novels_ranking (target_url, spider, type, finished_at, json_data) values (:1, :2, :3, :4, :5)",
-                    [res_dic['target_url'], res_dic['spider'], res_dic['type'], time.strftime("%Y-%m-%d %X", time.localtime()), json.dumps(res_dic['data'])])
-                oracle_db.commit()
-                cursor2.close()
-            cursor.close()
-            # await oracle_db.novels_ranking.update_one({
-            #     'target_url': res_dic['target_url']},
-            #     {'$set': {
-            #         'data': res_dic['data'],
-            #         'spider': res_dic['spider'],
-            #         'type': res_dic['type'],
-            #         'finished_at': time.strftime("%Y-%m-%d %X", time.localtime())
-            #     }},
-            #     upsert=True)
+            motor_db = MotorBaseOld().db
+            await motor_db.novels_ranking.update_one({
+                'target_url': res_dic['target_url']},
+                {'$set': {
+                    'data': res_dic['data'],
+                    'spider': res_dic['spider'],
+                    'type': res_dic['type'],
+                    'finished_at': time.strftime("%Y-%m-%d %X", time.localtime())
+                }},
+                upsert=True)
         except Exception as e:
             self.logger.exception(e)
 

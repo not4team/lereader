@@ -7,7 +7,7 @@ from sanic import Blueprint
 from sanic.response import redirect, html, text, json
 
 from owllook.config import RULES, LOGGER, REPLACE_RULES, ENGINE_PRIORITY, CONFIG
-from owllook.database.oracle import OracleBase
+from owllook.database.mongodb import MotorBase
 from owllook.fetcher.cache import cache_owllook_novels_content, cache_owllook_novels_chapter, \
     cache_owllook_search_ranking
 from owllook.fetcher.function import get_time, get_netloc
@@ -20,13 +20,13 @@ novels_bp.static('/static/novels', CONFIG.BASE_DIR + '/static/novels')
 
 @novels_bp.listener('before_server_start')
 def setup_db(novels_bp, loop):
-    global oracle_base
-    oracle_base = OracleBase()
+    global motor_base
+    motor_base = MotorBase()
 
 
 @novels_bp.listener('after_server_stop')
 def close_connection(novels_bp, loop):
-    oracle_base = None
+    motor_base = None
 
 
 # jinjia2 config
@@ -82,10 +82,10 @@ async def index(request):
     user = request['session'].get('user', None)
     search_ranking = await cache_owllook_search_ranking()
     if user:
-        return template('index.html', title='lereader - 网络小说搜索引擎', is_login=1, user=user,
+        return template('index.html', title='owllook - 网络小说搜索引擎', is_login=1, user=user,
                         search_ranking=search_ranking[:25])
     else:
-        return template('index.html', title='lereader - 网络小说搜索引擎', is_login=0, search_ranking=search_ranking[:25])
+        return template('index.html', title='owllook - 网络小说搜索引擎', is_login=0, search_ranking=search_ranking[:25])
 
 
 @novels_bp.route("/owllook_content")
@@ -112,16 +112,16 @@ async def owllook_content(request):
     book_url = "/chapter?url={chapter_url}&novels_name={novels_name}".format(
         chapter_url=chapter_url,
         novels_name=novels_name)
-    oracle_db = oracle_base.get_db()
+    motor_db = motor_base.get_db()
     if url == chapter_url:
         # 阅读到最后章节时候 在数据库中保存最新阅读章节
         if user and is_ajax == "owl_cache":
             owl_referer = request.headers.get('Referer', '').split('owllook_content')[1]
             if owl_referer:
                 latest_read = "/owllook_content" + owl_referer
-                # await motor_db.user_message.update_one(
-                #     {'user': user, 'books_url.book_url': book_url},
-                #     {'$set': {'books_url.$.last_read_url': latest_read}})
+                await motor_db.user_message.update_one(
+                    {'user': user, 'books_url.book_url': book_url},
+                    {'$set': {'books_url.$.last_read_url': latest_read}})
         return redirect(book_url)
     content_url = RULES[netloc].content_url
     content_data = await cache_owllook_novels_content(url=url, netloc=netloc)
@@ -141,6 +141,7 @@ async def owllook_content(request):
             )
             # 破坏广告链接
             content = str(content).strip('[]Jjs,').replace('http', 'hs').replace('.js', '').replace('();', '')
+            content += """欢迎关注公众号【粮草小说】，享受精品书籍推荐以及实体书赠送福利！"""
             if user:
                 bookmark = await motor_db.user_message.find_one({'user': user, 'bookmarks.bookmark': bookmark_url})
                 book = await motor_db.user_message.find_one({'user': user, 'books_url.book_url': book_url})
@@ -256,20 +257,15 @@ async def owllook_search(request):
     start = time.time()
     name = str(request.args.get('wd', '')).strip()
     novels_keyword = name.split(' ')[0]
-    oracle_db = oracle_base.get_db()
+    motor_db = motor_base.get_db()
     if not name:
         return redirect('/')
     else:
         # 记录搜索小说名
         try:
-            # await motor_db.search_records.update_one({'keyword': name}, {'$inc': {'count': 1}}, upsert=True)
-            cursor = oracle_db.cursor()
-            cursor.callproc('pro_search', [name])
-            oracle_db.commit()
+            await motor_db.search_records.update_one({'keyword': name}, {'$inc': {'count': 1}}, upsert=True)
         except Exception as e:
             LOGGER.exception(e)
-        finally:
-            cursor.close()
     # 通过搜索引擎获取检索结果
     parse_result = None
     if name.startswith('!baidu'):

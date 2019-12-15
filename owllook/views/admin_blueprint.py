@@ -5,7 +5,7 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 from sanic import Blueprint
 from sanic.response import html, redirect
 
-from owllook.database.oracle import OracleBase
+from owllook.database.mongodb import MotorBase
 from owllook.fetcher.cache import get_the_latest_chapter
 from owllook.config import LOGGER, CONFIG
 
@@ -15,13 +15,13 @@ admin_bp.static('/static/novels', CONFIG.BASE_DIR + '/static/novels')
 
 @admin_bp.listener('before_server_start')
 def setup_db(admin_bp, loop):
-    global oracle_base
-    oracle_base = OracleBase()
+    global motor_base
+    motor_base = MotorBase()
 
 
 @admin_bp.listener('after_server_stop')
 def close_connection(admin_bp, loop):
-    oracle_base = None
+    motor_base = None
 
 
 # jinjia2 config
